@@ -133,7 +133,7 @@
             <h2 class="text-2xl font-bold mb-4">카메라</h2>
             <video id="cameraFeed" class="w-full rounded-xl mb-4" autoplay></video>
             <canvas id="cameraCanvas" class="hidden"></canvas>
-            <div class="flex justify-center gap-4">
+            <div class="flex justify-center gap-4 z-10 relative flex-wrap">
                 <button id="takePhotoBtn" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-full transition duration-300">
                     사진 찍기
                 </button>
@@ -163,6 +163,17 @@
         </div>
     </div>
 
+    <!-- 커스텀 메시지 모달 -->
+    <div id="messageModal" class="fixed inset-0 z-50 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="relative bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <h2 class="text-xl font-bold mb-4" id="messageModalTitle"></h2>
+            <p class="text-gray-700 mb-6" id="messageModalText"></p>
+            <button class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition duration-300" onclick="hideMessageModal()">
+                확인
+            </button>
+        </div>
+    </div>
+
     <!-- 효과음 (데이터 URI) -->
     <audio id="suspenseSound">
         <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAAACABAAZGF0YSAgAAAAAA==" type="audio/wav">
@@ -177,6 +188,18 @@
         let momImageBase64 = null;
         let cameraTargetElementId = null;
         let cameraStream = null;
+
+        // 커스텀 메시지 모달 제어 함수
+        function showMessageModal(title, message) {
+            const modal = document.getElementById('messageModal');
+            document.getElementById('messageModalTitle').textContent = title;
+            document.getElementById('messageModalText').textContent = message;
+            modal.classList.remove('hidden');
+        }
+
+        function hideMessageModal() {
+            document.getElementById('messageModal').classList.add('hidden');
+        }
 
         // API 호출을 위한 헬퍼 함수
         async function fetchWithExponentialBackoff(url, options, retries = 5, delay = 1000) {
@@ -247,7 +270,7 @@
             } catch (err) {
                 console.error('카메라 접근 권한이 거부되었습니다.', err);
                 // 사용자에게 경고 메시지를 표시
-                alert("카메라 접근 권한이 필요합니다. 브라우저 설정에서 권한을 허용해주세요.");
+                showMessageModal("오류 발생", "카메라 접근 권한이 필요합니다. 브라우저 설정에서 권한을 허용해주세요.");
             }
         }
 
@@ -342,7 +365,7 @@
 
             } catch (error) {
                 console.error("이미지 생성 오류:", error);
-                alert("이미지 생성 중 오류가 발생했습니다. 다시 시도해 주세요.");
+                showMessageModal("오류 발생", "이미지 생성 중 오류가 발생했습니다. 다시 시도해 주세요.");
                 daughterImageDiv.innerHTML = '<span>오류 발생</span>';
                 sonImageDiv.innerHTML = '<span>오류 발생</span>';
             } finally {
