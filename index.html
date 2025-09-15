@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>미래의 자녀 얼굴 예측 프로그램</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 900px;
+        }
+        .glass-card {
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .image-placeholder {
+            width: 100%;
+            height: 200px;
+            background-color: #e0e0e0;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            color: #6b7280;
+            border: 2px dashed #9ca3af;
+        }
+        .image-container {
+            width: 100%;
+            height: 200px;
+            border-radius: 1rem;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        @keyframes countdown-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+        }
+        .countdown-text {
+            animation: countdown-pulse 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- 메인 컨테이너 -->
+    <div class="container mx-auto p-8 rounded-3xl glass-card flex flex-col items-center">
+        <h1 class="text-4xl font-bold mb-2 text-center text-gray-800">미래의 자녀 얼굴 예측기</h1>
+        <p class="text-lg text-center text-gray-600 mb-8">두 분의 얼굴을 합쳐 미래의 딸과 아들을 예측해 보세요!</p>
+        
+        <!-- 개발자 명시 -->
+        <p class="text-sm text-gray-500 mb-8">개발자: 가치있는 미래교육 연구소 대표 김병찬</p>
+
+        <!-- 이미지 입력 섹션 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+            <!-- 아빠 이미지 섹션 -->
+            <div class="flex flex-col items-center bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">아빠 이미지</h2>
+                <div id="dadImagePreview" class="image-placeholder mb-4">
+                    <span>아빠 사진을 여기에 업로드하세요</span>
+                </div>
+                <div class="flex flex-col md:flex-row gap-4 w-full">
+                    <label for="dadFile" class="flex-1 cursor-pointer bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-full text-center transition duration-300">
+                        사진 업로드
+                    </label>
+                    <input type="file" id="dadFile" class="hidden" accept="image/*" onchange="previewImage(event, 'dadImagePreview')">
+                    <button id="dadCameraBtn" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-full transition duration-300" onclick="captureImage('dadImagePreview')">
+                        카메라 촬영
+                    </button>
+                </div>
+            </div>
+
+            <!-- 엄마 이미지 섹션 -->
+            <div class="flex flex-col items-center bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">엄마 이미지</h2>
+                <div id="momImagePreview" class="image-placeholder mb-4">
+                    <span>엄마 사진을 여기에 업로드하세요</span>
+                </div>
+                <div class="flex flex-col md:flex-row gap-4 w-full">
+                    <label for="momFile" class="flex-1 cursor-pointer bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-full text-center transition duration-300">
+                        사진 업로드
+                    </label>
+                    <input type="file" id="momFile" class="hidden" accept="image/*" onchange="previewImage(event, 'momImagePreview')">
+                    <button id="momCameraBtn" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-full transition duration-300" onclick="captureImage('momImagePreview')">
+                        카메라 촬영
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 예측하기 버튼 -->
+        <button id="predictBtn" class="mt-8 bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-full text-xl shadow-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed" onclick="predictFaces()" disabled>
+            미래의 자녀 얼굴 예측하기!
+        </button>
+
+        <!-- 결과 섹션 (처음에는 숨김) -->
+        <div id="results" class="mt-12 w-full hidden">
+            <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">예측 결과</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+                <!-- 딸 이미지 -->
+                <div class="flex flex-col items-center p-6 bg-white rounded-2xl shadow-lg">
+                    <h3 class="text-2xl font-semibold mb-4 text-pink-500">예측된 딸의 얼굴</h3>
+                    <div id="daughterImage" class="w-full aspect-square bg-gray-200 rounded-xl overflow-hidden animate-pulse"></div>
+                </div>
+                <!-- 아들 이미지 -->
+                <div class="flex flex-col items-center p-6 bg-white rounded-2xl shadow-lg">
+                    <h3 class="text-2xl font-semibold mb-4 text-blue-500">예측된 아들의 얼굴</h3>
+                    <div id="sonImage" class="w-full aspect-square bg-gray-200 rounded-xl overflow-hidden animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 카메라 팝업 모달 -->
+    <div id="cameraModal" class="fixed inset-0 z-50 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="relative bg-white p-8 rounded-2xl shadow-2xl w-full max-w-xl text-center">
+            <h2 class="text-2xl font-bold mb-4">카메라</h2>
+            <video id="cameraFeed" class="w-full rounded-xl mb-4" autoplay></video>
+            <canvas id="cameraCanvas" class="hidden"></canvas>
+            <div class="flex justify-center gap-4">
+                <button id="takePhotoBtn" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-full transition duration-300">
+                    사진 찍기
+                </button>
+                <button id="cancelPhotoBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-full transition duration-300" onclick="closeCamera()">
+                    취소
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 카운트다운 모달 -->
+    <div id="countdownModal" class="fixed inset-0 z-50 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="relative bg-white p-8 rounded-2xl shadow-2xl w-96 text-center">
+            <div class="countdown-text text-6xl font-extrabold text-purple-600 mb-4">5</div>
+            <p class="text-xl font-semibold text-gray-700">미래의 얼굴을 생성 중입니다...</p>
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-4">
+                <div class="bg-purple-600 h-2.5 rounded-full" style="width: 0%" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 로딩 스피너 -->
+    <div id="loadingOverlay" class="fixed inset-0 z-50 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="relative w-20 h-20">
+            <div class="absolute inset-0 border-4 border-transparent border-t-purple-500 rounded-full animate-spin"></div>
+            <div class="absolute inset-2 border-4 border-transparent border-t-pink-500 rounded-full animate-spin-reverse"></div>
+        </div>
+    </div>
+
+    <!-- 효과음 (데이터 URI) -->
+    <audio id="suspenseSound">
+        <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAAACABAAZGF0YSAgAAAAAA==" type="audio/wav">
+    </audio>
+
+    <script type="text/javascript">
+        // API 키는 비워 둡니다. Canvas 환경에서 자동으로 채워집니다.
+        const apiKey = "";
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=" + apiKey;
+
+        let dadImageBase64 = null;
+        let momImageBase64 = null;
+        let cameraTargetElementId = null;
+        let cameraStream = null;
+
+        // API 호출을 위한 헬퍼 함수
+        async function fetchWithExponentialBackoff(url, options, retries = 5, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status !== 429) { // 429 Too Many Requests가 아니면 성공
+                        return response;
+                    }
+                } catch (error) {
+                    if (i === retries - 1) throw error; // 마지막 시도에서만 에러를 던집니다.
+                }
+                await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+            }
+        }
+
+        // 이미지 파일 미리보기 및 Base64 변환
+        function previewImage(event, previewId) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 이미지 크기 조정 (선택적)
+                    const MAX_WIDTH = 500;
+                    const scaleFactor = Math.min(MAX_WIDTH / img.width, 1);
+                    canvas.width = img.width * scaleFactor;
+                    canvas.height = img.height * scaleFactor;
+                    
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const base64Data = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+                    
+                    // 이미지 데이터 저장
+                    if (previewId === 'dadImagePreview') {
+                        dadImageBase64 = base64Data;
+                    } else {
+                        momImageBase64 = base64Data;
+                    }
+                    
+                    // 미리보기 업데이트
+                    const previewElement = document.getElementById(previewId);
+                    previewElement.innerHTML = `<img src="${e.target.result}" class="rounded-xl">`;
+                    previewElement.classList.remove('image-placeholder');
+                    previewElement.classList.add('image-container');
+
+                    checkInputs();
+                };
+                img.src = e.target.result;
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        // 카메라 촬영 시작
+        async function captureImage(targetId) {
+            cameraTargetElementId = targetId;
+            const cameraModal = document.getElementById('cameraModal');
+            const video = document.getElementById('cameraFeed');
+
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                video.srcObject = cameraStream;
+                cameraModal.classList.remove('hidden');
+            } catch (err) {
+                console.error('카메라 접근 권한이 거부되었습니다.', err);
+                // 사용자에게 경고 메시지를 표시
+                alert("카메라 접근 권한이 필요합니다. 브라우저 설정에서 권한을 허용해주세요.");
+            }
+        }
+
+        // 사진 찍기
+        function takePhoto() {
+            const video = document.getElementById('cameraFeed');
+            const canvas = document.getElementById('cameraCanvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            const base64Data = imageDataUrl.split(',')[1];
+            
+            // 이미지 데이터 저장
+            if (cameraTargetElementId === 'dadImagePreview') {
+                dadImageBase64 = base64Data;
+            } else {
+                momImageBase64 = base64Data;
+            }
+
+            // 미리보기 업데이트
+            const previewElement = document.getElementById(cameraTargetElementId);
+            previewElement.innerHTML = `<img src="${imageDataUrl}" class="rounded-xl">`;
+            previewElement.classList.remove('image-placeholder');
+            previewElement.classList.add('image-container');
+
+            closeCamera();
+            checkInputs();
+        }
+
+        // 카메라 닫기
+        function closeCamera() {
+            const cameraModal = document.getElementById('cameraModal');
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            cameraModal.classList.add('hidden');
+        }
+
+        // 입력 상태 확인 및 버튼 활성화
+        function checkInputs() {
+            const predictBtn = document.getElementById('predictBtn');
+            if (dadImageBase64 && momImageBase64) {
+                predictBtn.disabled = false;
+            } else {
+                predictBtn.disabled = true;
+            }
+        }
+
+        // 예측 프로세스 시작
+        async function predictFaces() {
+            const predictBtn = document.getElementById('predictBtn');
+            predictBtn.disabled = true;
+            const resultsSection = document.getElementById('results');
+            resultsSection.classList.add('hidden');
+
+            const daughterImageDiv = document.getElementById('daughterImage');
+            const sonImageDiv = document.getElementById('sonImage');
+
+            // 로딩 상태 초기화
+            daughterImageDiv.innerHTML = '';
+            sonImageDiv.innerHTML = '';
+            daughterImageDiv.classList.add('animate-pulse');
+            sonImageDiv.classList.add('animate-pulse');
+
+            // 카운트다운 시작
+            showCountdown();
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            hideCountdown();
+
+            // 로딩 오버레이 표시
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+
+            // API 호출
+            try {
+                const [daughterResult, sonResult] = await Promise.all([
+                    generateImage("딸"),
+                    generateImage("아들")
+                ]);
+                
+                // 결과 표시
+                daughterImageDiv.innerHTML = `<img src="data:image/png;base64,${daughterResult}" class="rounded-xl">`;
+                sonImageDiv.innerHTML = `<img src="data:image/png;base64,${sonResult}" class="rounded-xl">`;
+                
+                daughterImageDiv.classList.remove('animate-pulse');
+                sonImageDiv.classList.remove('animate-pulse');
+
+                resultsSection.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("이미지 생성 오류:", error);
+                alert("이미지 생성 중 오류가 발생했습니다. 다시 시도해 주세요.");
+                daughterImageDiv.innerHTML = '<span>오류 발생</span>';
+                sonImageDiv.innerHTML = '<span>오류 발생</span>';
+            } finally {
+                predictBtn.disabled = false;
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+        }
+
+        // 이미지 생성 API 호출 함수
+        async function generateImage(gender) {
+            const prompt = `Generate a realistic, high-quality photograph of a young ${gender === '딸' ? 'girl' : 'boy'}, aged around 8-10. The child should have facial features that are a natural and harmonious blend of the two people shown in the images. The image should be in a bright, natural setting with a friendly expression.`;
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        { inlineData: { mimeType: "image/jpeg", data: dadImageBase64 } },
+                        { inlineData: { mimeType: "image/jpeg", data: momImageBase64 } }
+                    ]
+                }],
+                generationConfig: {
+                    responseModalities: ['TEXT', 'IMAGE']
+                },
+            };
+            
+            const response = await fetchWithExponentialBackoff(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('API 응답 오류:', errorData);
+                throw new Error('API 응답 오류: ' + response.statusText);
+            }
+            
+            const result = await response.json();
+            const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+            if (!base64Data) {
+                throw new Error('이미지 데이터가 응답에 없습니다.');
+            }
+            return base64Data;
+        }
+
+        // 카운트다운 모달 제어
+        function showCountdown() {
+            const countdownModal = document.getElementById('countdownModal');
+            const countdownText = countdownModal.querySelector('.countdown-text');
+            const progressBar = document.getElementById('progressBar');
+            const sound = document.getElementById('suspenseSound');
+
+            let count = 5;
+            countdownModal.classList.remove('hidden');
+            sound.play(); // 효과음 재생
+
+            const interval = setInterval(() => {
+                count--;
+                countdownText.textContent = count;
+                progressBar.style.width = `${((5 - count) / 5) * 100}%`;
+
+                if (count <= 0) {
+                    clearInterval(interval);
+                }
+            }, 1000);
+        }
+
+        function hideCountdown() {
+            document.getElementById('countdownModal').classList.add('hidden');
+        }
+
+        // 이벤트 리스너
+        document.getElementById('takePhotoBtn').addEventListener('click', takePhoto);
+    </script>
+</body>
+</html>
